@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>하루 도우미</title>
+    <style>
+        :root {
+            /* 기본(크게) 사이즈 변수 */
+            --font-date: 2.2rem;
+            --font-title: 1.5rem;
+            --font-button: 1.3rem;
+            --font-modal: 2rem;
+            
+            --bg-color: #FDFBF7; /* 눈이 편안한 따뜻한 미색 */
+            --text-color: #1A1A1A; /* 완전 검정보다 눈 피로가 덜한 짙은 회색 */
+            --primary-btn: #0056B3; /* 시인성 높은 파란색 */
+            --success-color: #2E7D32; /* 성공/완료 짙은 녹색 */
+            --border-color: #D1D1D1;
+        }
+
+        /* [더 크게] 모드일 때의 사이즈 변수 */
+        body.extra-large {
+            --font-date: 2.8rem;
+            --font-title: 1.9rem;
+            --font-button: 1.6rem;
+            --font-modal: 2.5rem;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--border-color);
+        }
+
+        #current-date {
+            font-size: var(--font-date);
+            font-weight: 900;
+            margin-bottom: 15px;
+            line-height: 1.2;
+            word-break: keep-all;
+        }
+
+        .size-toggle-btn {
+            background-color: var(--text-color);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .section-title {
+            font-size: var(--font-title);
+            font-weight: bold;
+            margin: 25px 0 15px 0;
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        /* 물 마시기 그리드 */
+        .water-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .water-btn {
+            background-color: #FFFFFF;
+            border: 3px solid var(--primary-btn);
+            border-radius: 15px;
+            font-size: 2rem;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 var(--primary-btn);
+        }
+
+        .water-btn.drank {
+            background-color: #E3F2FD;
+            border-color: var(--primary-btn);
+            opacity: 0.5;
+            box-shadow: none;
+            transform: translateY(4px);
+        }
+
+        /* 할 일 버튼 */
+        .todo-btn {
+            display: block;
+            width: 100%;
+            background-color: #FFFFFF;
+            border: 3px solid var(--primary-btn);
+            color: var(--text-color);
+            font-size: var(--font-button);
+            font-weight: bold;
+            padding: 25px 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 var(--primary-btn);
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .todo-btn.done {
+            background-color: #E8F5E9;
+            border-color: var(--success-color);
+            color: var(--success-color);
+            box-shadow: none;
+            transform: translateY(5px);
+        }
+
+        /* 성공 모달 (꽃 피는 효과) */
+        #reward-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #reward-screen.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .flower {
+            font-size: 5rem;
+            transform: scale(0);
+        }
+
+        #reward-screen.show .flower {
+            animation: bloom 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .reward-msg {
+            font-size: var(--font-modal);
+            font-weight: bold;
+            color: #D81B60;
+            margin-top: 20px;
+            text-align: center;
+            line-height: 1.4;
+            opacity: 0;
+        }
+
+        #reward-screen.show .reward-msg {
+            animation: fadeIn 1s ease 1s forwards;
+        }
+
+        @keyframes bloom {
+            0% { transform: scale(0) rotate(-180deg); }
+            100% { transform: scale(1.5) rotate(0deg); }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div id="current-date">0000년 0월 0일<br>월요일</div>
+        <button id="size-toggle" class="size-toggle-btn" onclick="toggleFontSize()">글씨 크기: [크게]</button>
+    </header>
+
+    <main>
+        <div class="section-title">💧 물 8잔 마시기</div>
+        <div class="water-grid" id="water-container">
+            <!-- 자바스크립트로 8개 생성 -->
+        </div>
+
+        <div class="section-title">✅ 오늘 할 일</div>
+        <button id="btn-walk" class="todo-btn" onclick="toggleTodo('walk')">
+            <span>🚶 산책 다녀오기</span>
+            <span class="status">□</span>
+        </button>
+        <button id="btn-call" class="todo-btn" onclick="toggleTodo('call')">
+            <span>📞 가족에게 전화하기</span>
+            <span class="status">□</span>
+        </button>
+    </main>
+
+    <div id="reward-screen">
+        <div class="flower">🌸</div>
+        <div class="reward-msg">오늘도 수고하셨어요!<br>최고입니다👍</div>
+    </div>
+
+    <script>
+        // 상태 관리 변수
+        let waterCount = 0;
+        let isWalkDone = false;
+        let isCallDone = false;
+        let isExtraLarge = false;
+
+        // 1. 날짜 표시 로직
+        function setTodayDate() {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            const dateStr = today.toLocaleDateString('ko-KR', options);
+            // 요일을 줄바꿈해서 더 크게 보이게 설정
+            document.getElementById('current-date').innerHTML = dateStr.replace(' ', ' ').replace('일 ', '일<br>');
+        }
+
+        // 2. 글씨 크기 토글 로직
+        function toggleFontSize() {
+            const body = document.body;
+            const btn = document.getElementById('size-toggle');
+            isExtraLarge = !isExtraLarge;
+            
+            if (isExtraLarge) {
+                body.classList.add('extra-large');
+                btn.innerText = "글씨 크기: [더 크게]";
+                btn.style.backgroundColor = "#D81B60"; // 인지하기 쉽게 색상 변경
+            } else {
+                body.classList.remove('extra-large');
+                btn.innerText = "글씨 크기: [크게]";
+                btn.style.backgroundColor = "var(--text-color)";
+            }
+        }
+
+        // 3. 물 마시기 버튼 생성 및 클릭 로직
+        function initWaterGrid() {
+            const container = document.getElementById('water-container');
+            for (let i = 0; i < 8; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'water-btn';
+                btn.innerText = '💧';
+                btn.onclick = function() {
+                    if (!this.classList.contains('drank')) {
+                        this.classList.add('drank');
+                        waterCount++;
+                        checkAllDone();
+                    } else {
+                        // 실수로 눌렀을 때 취소 가능하게
+                        this.classList.remove('drank');
+                        waterCount--;
+                    }
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        // 4. 할 일 토글 로직
+        function toggleTodo(type) {
+            const btn = document.getElementById(`btn-${type}`);
+            const statusSpan = btn.querySelector('.status');
+            
+            if (type === 'walk') {
+                isWalkDone = !isWalkDone;
+                updateTodoUI(btn, statusSpan, isWalkDone);
+            } else if (type === 'call') {
+                isCallDone = !isCallDone;
+                updateTodoUI(btn, statusSpan, isCallDone);
+            }
+            checkAllDone();
+        }
+
+        function updateTodoUI(btn, statusSpan, isDone) {
+            if (isDone) {
+                btn.classList.add('done');
+                statusSpan.innerText = "완료 ✔";
+            } else {
+                btn.classList.remove('done');
+                statusSpan.innerText = "□";
+            }
+        }
+
+        // 5. 완료 체크 및 보상(꽃) 로직
+        function checkAllDone() {
+            if (waterCount === 8 && isWalkDone && isCallDone) {
+                // 약간의 지연 후 모달 띄우기 (마지막 버튼 클릭 효과를 볼 수 있게)
+                setTimeout(() => {
+                    document.getElementById('reward-screen').classList.add('show');
+                }, 400);
+            } else {
+                document.getElementById('reward-screen').classList.remove('show');
+            }
+        }
+
+        // 앱 초기화
+        window.onload = function() {
+            setTodayDate();
+            initWaterGrid();
+        };
+    </script>
+</body>
+</html>
